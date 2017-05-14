@@ -229,7 +229,7 @@ class ServerConnection:
                       timeout)
             writer.abort()
             self._handler_coroutine.cancel()
-        await self._handle_event(Event("disconnect", self.server, "", [message]))
+        await self._handle_event(Event("disconnect", self.server, "", []))
 
     async def _handle_client(self):
         while True:
@@ -627,6 +627,8 @@ class Event(object):
 
             arguments -- Any event-specific arguments.
         """
+        if not isinstance(type, str):
+            raise TypeError(type)
         self.type = type
         self.source = source
         self.target = target

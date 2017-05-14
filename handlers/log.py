@@ -42,7 +42,11 @@ class Handler:
                                           source='-', type='joinpart'))
 
     def print_event(self, event):
-        self.events.info(' '.join(event.arguments).strip(),
+        try:
+            msg = ' '.join(event.arguments)
+        except TypeError:
+            raise ValueError(event.arguments)
+        self.events.info(msg.strip(),
                          extra=dict(event=event, target=event.target,
                                     type=event.type))
 

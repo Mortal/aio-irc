@@ -7,8 +7,6 @@ import argparse
 import functools
 import importlib
 import traceback
-import contextlib
-import collections
 
 import irc.client
 
@@ -61,15 +59,52 @@ def init_logging(config):
       '[%(asctime)s %(type)10s] %(message)s')
 
 
-class Handler:
-    def __init__(self):
+class Client:
+    def __init__(self, config, loop):
+        self.config = config
+        self.loop = loop
+        self.connection = irc.client.ServerConnection(
+            self.event_handler, loop=loop)
         self.welcomed = asyncio.Event()
         self.subhandlers = {
             m: importlib.import_module('handlers.%s' % m).Handler()
             for m in 'hostnotify ping sub highlight log'.split()
         }
 
-    async def __call__(self, connection, event):
+    async def connect(self):
+        if self.config.USERNAME:
+            username = self.config.USERNAME
+            password = self.config.PASSWORD
+        else:
+            username = self.config.DEFAULT_USERNAME
+            password = self.config.DEFAULT_PASSWORD
+        await self.connection.connect(
+            self.config.SERVER, self.config.PORT, username, password,
+            caps=self.config.CAPS)
+        await self.welcomed.wait()
+        for c in self.config.CHANNELS:
+            await self.connection.join('#'+c)
+
+    async def handle_stdin(self):
+        async for linedata in async_readlines(self.loop):
+            try:
+                line = linedata.decode()
+            except UnicodeDecodeError:
+                linedata.hide()
+                print('Could not decode %r' % (line,))
+                continue
+            showhide = ShowHide(linedata.show, linedata.hide)
+            line = line.rstrip('\r\n')
+            if line.startswith('/'):
+                method, sp, args = line[1:].partition(' ')
+            else:
+                method, args = 'say', line
+            await self.input_command(method, args, showhide)
+            showhide.show()
+        await self.connection.quit()
+        await self.connection.disconnect()
+
+    async def event_handler(self, connection, event):
         if event.type == 'all_raw_messages':
             return
         for handler in [self] + list(self.subhandlers.values()):
@@ -85,10 +120,10 @@ class Handler:
                        event.type))
                 traceback.print_exc()
 
-    async def handle_welcome(self, connection, event):
+    async def handle_welcome(self, event):
         self.welcomed.set()
 
-    async def command_load(self, connection, *args):
+    async def command_load(self, *args):
         if not args:
             print("Usage: /load module")
         for m in args:
@@ -110,7 +145,7 @@ class Handler:
                 print('Could not initialize %s.Handler' % name)
                 continue
 
-    async def command_unload(self, connection, *args):
+    async def command_unload(self, *args):
         if not args:
             print("Usage: /unload module")
         for m in args:
@@ -119,34 +154,60 @@ class Handler:
             except KeyError:
                 print('Module %s not loaded' % m)
 
-    async def command_quit(self, connection, *args):
+    async def command_quit(self, *args):
         try:
-            await connection.quit(' '.join(args))
+            await self.connection.quit(' '.join(args))
         except irc.client.ServerNotConnectedError:
             pass
-        await connection.disconnect()
-        print("command_quit done")
-        assert not connection.connected
+        await self.connection.disconnect()
+        assert not self.connection.connected
 
-    async def command_quot(self, connection, *args):
-        await connection.send_items(*args)
+    async def command_quot(self, *args):
+        await self.connection.send_items(*args)
 
-    async def input_command(self, connection, method, args):
-        if '_' in method:
+    async def command_say(self, args, showhide):
+        if args.strip() == '':
+            showhide.hide()
+            return
+        if not self.config.USERNAME:
+            showhide.show()
+            return 'Not logged in! ' + self.config.USERNAME
+        elif len(self.config.CHANNELS) != 1:
+            showhide.show()
+            print("Wrong number of channels in config (%r)" %
+                  len(self.config.CHANNELS))
+        else:
+            showhide.hide()
+            channel = '#'+self.config.CHANNELS[0]
+            self.subhandlers['log'].log_sent(
+                channel, self.config.USERNAME, args)
+            await self.connection.privmsg(channel, args)
+
+    def find_command(self, method, args, showhide):
+        method_lower = method.lower()
+        cmd_method = 'command_' + method_lower
+        if hasattr(self, cmd_method):
+            return functools.partial(
+                getattr(self, cmd_method), args, showhide)
+        if '_' not in method:
+            fn = getattr(self.connection, method_lower, None)
+            if inspect.iscoroutinefunction(fn):
+                return functools.partial(fn, *args.split())
+        for subhandler in self.subhandlers.values():
+            try:
+                return functools.partial(
+                    getattr(subhandler, cmd_method),
+                    self, args, showhide)
+            except AttributeError:
+                pass
+
+    async def input_command(self, method, args, showhide):
+        fn = self.find_command(method, args, showhide)
+        if fn is None:
             print('Invalid method %r' % method)
             return
-        method_lower = method.lower()
         try:
-            fn = getattr(self, 'command_' + method_lower)
-        except AttributeError:
-            fn = getattr(connection, method_lower, None)
-            if not inspect.iscoroutinefunction(fn):
-                print('Invalid method %r' % method)
-                return
-        else:
-            fn = functools.partial(fn, connection)
-        try:
-            res = await fn(*args.split())
+            res = await fn()
         except Exception:
             traceback.print_exc()
         else:
@@ -154,57 +215,29 @@ class Handler:
                 print(res)
 
 
-async def handle_stdin(loop, handler, client, config):
-    async for linedata in async_readlines(loop):
-        try:
-            line = linedata.decode()
-        except UnicodeDecodeError:
-            linedata.hide()
-            print('Could not decode %r' % (line,))
-            continue
-        line = line.rstrip('\r\n')
-        if line.startswith('/'):
-            linedata.show()
-            method, sp, args = line[1:].partition(' ')
-            await handler.input_command(client, method, args)
-        else:
-            if line == '':
-                linedata.hide()
-                continue
-            if not config.USERNAME:
-                linedata.show()
-                print("Not logged in")
-            elif len(config.CHANNELS) != 1:
-                linedata.show()
-                print("Wrong number of channels in config (%r)" %
-                      len(config.CHANNELS))
-            else:
-                linedata.hide()
-                channel = '#'+config.CHANNELS[0]
-                handler.subhandlers['log'].log_sent(
-                    channel, config.USERNAME, line)
-                await client.privmsg(channel, line)
-    await client.quit()
-    await client.disconnect()
+class ShowHide:
+    def __init__(self, show, hide):
+        self._show = show
+        self._hide = hide
+        self._calls = 0
+
+    def show(self):
+        self._calls += 1
+        if self._calls == 1:
+            self._show()
+
+    def hide(self):
+        self._calls += 1
+        if self._calls == 1:
+            self._hide()
 
 
 async def main_async(loop, config):
-    handler = Handler()
-    client = irc.client.ServerConnection(handler, loop=loop)
-    if config.USERNAME:
-        username = config.USERNAME
-        password = config.PASSWORD
-    else:
-        username = config.DEFAULT_USERNAME
-        password = config.DEFAULT_PASSWORD
-    await client.connect(
-        config.SERVER, config.PORT, username, password, caps=TWITCH_CAPS)
-    await handler.welcomed.wait()
-    for c in config.CHANNELS:
-        await client.join('#'+c)
-    task = loop.create_task(handle_stdin(loop, handler, client, config))
+    client = Client(config, loop)
+    await client.connect()
+    task = loop.create_task(client.handle_stdin())
     try:
-        await client.wait_disconnected()
+        await client.connection.wait_disconnected()
     finally:
         task.cancel()
         try:
