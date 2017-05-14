@@ -1,3 +1,4 @@
+import re
 import asyncio
 import datetime
 
@@ -74,7 +75,14 @@ class Handler:
             data['tags'] = tags
         print(f'{self.now_str()} {repr(data)}',
               file=self.messages, flush=True)
-        print(f'[{self.time_str()} {event.target:<12} {name:>30}] {event.args}')
+        name_pad = name.rjust(30)
+        if tags.get('color'):
+            mo = re.match(r'^#(..)(..)(..)$', tags['color'])
+            r, g, b = [int(v, 16) for v in mo.group(1, 2, 3)]
+            light = max(r, g, b)
+            if light > 32:
+                name_pad = '\x1B[38;2;%s;%s;%sm%s\x1B[39m' % (r, g, b, name_pad)
+        print(f'[{self.time_str()} {event.target:<12} {name_pad}] {event.args}')
 
     def log_sent(self, target, username, message):
         type = 'sent'
