@@ -10,7 +10,6 @@ class Handler:
         self._delayed_print_joinpart_task = None
 
     async def _delayed_print_joinpart(self):
-        n = len(self.joinparts)
         buf = []
         while self.joinparts:
             buf.extend(self.joinparts)
@@ -41,10 +40,6 @@ class Handler:
         return datetime.datetime.now().strftime('%H:%M:%S')
 
     def print_event(self, event):
-        try:
-            msg = ' '.join(event.arguments)
-        except TypeError:
-            raise ValueError(event.arguments)
         print(f'{self.now_str()} {repr(event)}',
               file=self.events, flush=True)
         source = getattr(event.source, 'nick', event.source)
