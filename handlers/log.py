@@ -3,6 +3,7 @@ import asyncio
 import datetime
 
 
+CHANNEL = 12
 NAME = 25
 
 
@@ -48,7 +49,7 @@ class Handler:
               file=self.events, flush=True)
         source = getattr(event.source, 'nick', event.source)
         s = f'{event.target} {event.type} {source}'
-        print(f'[{self.time_str()} {s:<43}] {event.args}')
+        print(f'[{self.time_str()} {s.ljust(CHANNEL+NAME+1)}] {event.args}')
 
     def log_custom_message(self, source, message, target, type):
         event_dict = dict(target=target, source=source, msg=message, type=type)
@@ -57,7 +58,7 @@ class Handler:
         nick = getattr(source, 'nick', source)
         if type != 'pubmsg':
             nick = f'{type} {nick}'
-        print(f'[{self.time_str()} {target:<12} {nick.rjust(NAME)}] {message}')
+        print(f'[{self.time_str()} {target.ljust(CHANNEL)} {nick.rjust(NAME)}] {message}')
 
     def print_message(self, event):
         tags = {
@@ -85,7 +86,7 @@ class Handler:
             light = max(r, g, b)
             if light > 32:
                 name_pad = '\x1B[38;2;%s;%s;%sm%s\x1B[39m' % (r, g, b, name_pad)
-        print(f'[{self.time_str()} {event.target:<12} {name_pad}] {event.args}')
+        print(f'[{self.time_str()} {event.target.ljust(CHANNEL)} {name_pad}] {event.args}')
 
     def log_sent(self, target, username, message):
         type = 'sent'
@@ -97,7 +98,7 @@ class Handler:
         }
         print(f'{self.now_str()} {repr(data)}',
               file=self.messages, flush=True)
-        print(f'[{self.time_str()} {target:<12} {username.rjust(NAME)}] {message}')
+        print(f'[{self.time_str()} {target.ljust(CHANNEL)} {username.rjust(NAME)}] {message}')
 
     async def _handle_message(self, connection, event):
         self.print_message(event)
