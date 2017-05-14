@@ -18,9 +18,6 @@ class Handler:
             await asyncio.sleep(0.1)
         if not buf:
             return
-        if len(buf) == 1:
-            self.print_message(buf[0])
-            return
         joins = []
         parts = []
         for e in buf:
