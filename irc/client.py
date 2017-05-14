@@ -122,6 +122,9 @@ class ServerConnection:
     def connected(self):
         return self.connected_event.is_set()
 
+    def wait_disconnected(self):
+        return self.disconnected_event.wait()
+
     def get_server_name(self):
         """Get the (real) server name.
 

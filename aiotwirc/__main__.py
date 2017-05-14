@@ -203,7 +203,7 @@ async def main_async(loop, config):
         await client.join('#'+c)
     task = loop.create_task(handle_stdin(loop, handler, client, config))
     try:
-        await client.disconnect()
+        await client.wait_disconnected()
     finally:
         task.cancel()
         try:
