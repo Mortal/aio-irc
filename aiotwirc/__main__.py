@@ -159,6 +159,7 @@ async def handle_stdin(loop, handler, client, config):
         try:
             line = linedata.decode()
         except UnicodeDecodeError:
+            linedata.hide()
             print('Could not decode %r' % (line,))
             continue
         line = line.rstrip('\r\n')
