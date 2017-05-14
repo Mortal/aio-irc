@@ -38,25 +38,15 @@ def read_config():
 
 
 def init_logging(config):
-    def f(name, filename, format, outformat=None, level=logging.INFO):
+    def f(name, filename, format, level=logging.INFO):
         logger = logging.getLogger(name)
         handler = logging.FileHandler(filename)
         handler.formatter = logging.Formatter(format)
         logger.addHandler(handler)
-        if outformat is not None:
-            outhandler = logging.StreamHandler(sys.stdout)
-            outhandler.formatter = logging.Formatter(outformat)
-            logger.addHandler(outhandler)
         logger.setLevel(level)
 
     f('irc.client', 'irc.log',
       '[%(asctime)s %(name)s %(levelname)s] %(message)s', level=logging.DEBUG)
-    f('aiotwirc.messages', 'messages.txt',
-      '%(asctime)s %(event)r',
-      '[%(asctime)s %(target)s %(source)30s] %(message)s')
-    f('aiotwirc.events', 'events.txt',
-      '%(asctime)s %(event)r',
-      '[%(asctime)s %(type)10s] %(message)s')
 
 
 class HandlerImportError(Exception):

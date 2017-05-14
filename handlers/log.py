@@ -1,11 +1,11 @@
 import asyncio
-import logging
+import datetime
 
 
 class Handler:
     def __init__(self):
-        self.messages = logging.getLogger('aiotwirc.messages')
-        self.events = logging.getLogger('aiotwirc.events')
+        self.messages = open('messages.txt', 'a')
+        self.events = open('events.txt', 'a')
         self.joinparts = []
         self._delayed_print_joinpart_task = None
 
@@ -29,23 +29,36 @@ class Handler:
                 print("Invalid type %r" % e.type)
         if joins:
             join_msg = '%s joined' % ', '.join(e.source.nick for e in joins)
-            self.messages.info(join_msg,
-                               extra=dict(event=None, target=buf[0].target,
-                                          source='-', type='joinpart'))
+            self.log_custom_message('-', join_msg, buf[0].target, 'joinpart')
         if parts:
             part_msg = '%s parted' % ', '.join(e.source.nick for e in parts)
-            self.messages.info(part_msg,
-                               extra=dict(event=None, target=buf[0].target,
-                                          source='-', type='joinpart'))
+            self.log_custom_message('-', part_msg, buf[0].target, 'joinpart')
+
+    def now_str(self):
+        return datetime.datetime.now().isoformat()
+
+    def time_str(self):
+        return datetime.datetime.now().strftime('%H:%M:%S')
 
     def print_event(self, event):
         try:
             msg = ' '.join(event.arguments)
         except TypeError:
             raise ValueError(event.arguments)
-        self.events.info(msg.strip(),
-                         extra=dict(event=event, target=event.target,
-                                    type=event.type))
+        print(f'{self.now_str()} {repr(event)}',
+              file=self.events, flush=True)
+        source = getattr(event.source, 'nick', event.source)
+        s = f'{event.target} {event.type} {source}'
+        print(f'[{self.time_str()} {s:<43}] {event.args}')
+
+    def log_custom_message(self, source, message, target, type):
+        event_dict = dict(target=target, source=source, msg=message, type=type)
+        print(f'{self.now_str()} {repr(event_dict)}',
+              file=self.messages, flush=True)
+        nick = getattr(source, 'nick', source)
+        if type != 'pubmsg':
+            nick = f'{type} {nick}'
+        print(f'[{self.time_str()} {target:<12} {nick:>30}] {message}')
 
     def print_message(self, event):
         tags = {
@@ -64,9 +77,21 @@ class Handler:
             name = f'{event.type} {name}'
         if tags:
             data['tags'] = tags
-        self.messages.info(' '.join(event.arguments),
-                           extra=dict(event=data, target=event.target,
-                                      source=name, type=event.type))
+        print(f'{self.now_str()} {repr(data)}',
+              file=self.messages, flush=True)
+        print(f'[{self.time_str()} {event.target:<12} {name:>30}] {event.args}')
+
+    def log_sent(self, target, username, message):
+        type = 'sent'
+        data = {
+            'target': target,
+            'source': username,
+            'msg': message,
+            'type': type,
+        }
+        print(f'{self.now_str()} {repr(data)}',
+              file=self.messages, flush=True)
+        print(f'[{self.time_str()} {target:<12} {username:>30}] {message}')
 
     async def _handle_message(self, connection, event):
         self.print_message(event)
@@ -96,15 +121,3 @@ class Handler:
         if key.startswith('handle_'):
             return self._handle_event
         raise AttributeError(key)
-
-    def log_sent(self, target, username, message):
-        type = 'sent'
-        data = {
-            'target': target,
-            'source': username,
-            'msg': message,
-            'type': type,
-        }
-        self.messages.info(message,
-                           extra=dict(event=data, target=target,
-                                      source=username, type=type))
