@@ -138,7 +138,7 @@ class Client:
         for m in args:
             prev = self.subhandlers.get(m)
             try:
-                self.subhandlers[m] = r = self.load_subhandler(m)
+                self.subhandlers[m] = r = await self.load_subhandler(m)
             except HandlerImportError as exn:
                 print(exn)
             else:
