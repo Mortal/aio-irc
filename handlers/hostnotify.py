@@ -1,3 +1,7 @@
+import webbrowser
+from aiotwirc.timer import spamming
+
+
 try:
     notify2
 except NameError:
@@ -36,3 +40,5 @@ class Handler:
             summary = f'{hosting_channel}: Hosting {target_channel}'
             message = f'{hosting_channel} is now hosting {target_channel}.'
         create_and_show_notification(summary, message, key='hosttarget')
+        if target_channel == '-' and not spamming(60):
+            webbrowser.open('https://twitch.tv/' + hosting_channel)
