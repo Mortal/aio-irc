@@ -14,6 +14,10 @@ class Handler:
         self.joinparts = []
         self._delayed_print_joinpart_task = None
 
+    async def unload(self):
+        self.messages.close()
+        self.events.close()
+
     async def _delayed_print_joinpart(self):
         buf = []
         while self.joinparts:
