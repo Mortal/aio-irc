@@ -122,9 +122,6 @@ class ServerConnection:
     def connected(self):
         return self.connected_event.is_set()
 
-    def wait_disconnected(self):
-        return self.disconnected_event.wait()
-
     def get_server_name(self):
         """Get the (real) server name.
 
@@ -214,6 +211,7 @@ class ServerConnection:
         writer, self._writer = self._writer, None
         if not writer:
             # Another disconnect in progress
+            await self.disconnected_event.wait()
             return
         if writer.can_write_eof():
             writer.write_eof()

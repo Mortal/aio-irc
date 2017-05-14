@@ -15,34 +15,28 @@ import irc.client
 from aiotwirc.stdio import async_readlines
 
 
-Config = collections.namedtuple(
-    'Config', 'server port username password anonymous channels all')
-
-APP_NAME = 'aiotwirc'
-IRC_SERVER = 'irc.chat.twitch.tv'
-IRC_PORT = 6667
-ANON_USERNAME = 'justinfan3141592653'
-ANON_PASSWORD = 'blah'
-TWITCH_CAPS = 'twitch.tv/tags twitch.tv/commands twitch.tv/membership'
+BASE_CONFIG = dict(
+    APP_NAME='aiotwirc',
+    DEFAULT_USERNAME='justinfan3141592653',
+    DEFAULT_PASSWORD='blah',
+    USERNAME=None,
+    PASSWORD=None,
+    SERVER='irc.chat.twitch.tv',
+    PORT=6667,
+    CAPS='twitch.tv/tags twitch.tv/commands twitch.tv/membership',
+    CHANNELS=(),
+)
 
 
 def read_config():
-    config = types.SimpleNamespace()
+    config = dict(BASE_CONFIG)
     with open('twitchconfig.py') as fp:
         config_source = fp.read()
     exec(config_source, {}, config)
-    try:
-        username = config.username
-        password = config.password
-        anonymous = False
-    except KeyError:
-        username = ANON_USERNAME
-        password = ANON_PASSWORD
-        anonymous = True
-    server = getattr(config, 'server', IRC_SERVER)
-    port = getattr(config, 'port', IRC_PORT)
-    return Config(server, port, username, password, anonymous,
-                  config.channels, config)
+    ns = types.SimpleNamespace()
+    for k, v in config.items():
+        setattr(ns, k, v)
+    return ns
 
 
 def init_logging(config):
@@ -176,35 +170,40 @@ async def handle_stdin(loop, handler, client, config):
             if line == '':
                 linedata.hide()
                 continue
-            if config.anonymous:
+            if not config.USERNAME:
                 linedata.show()
                 print("Not logged in")
-            elif len(config.channels) != 1:
+            elif len(config.CHANNELS) != 1:
                 linedata.show()
                 print("Wrong number of channels in config (%r)" %
-                      len(config.channels))
+                      len(config.CHANNELS))
             else:
                 linedata.hide()
-                channel = '#'+config.channels[0]
+                channel = '#'+config.CHANNELS[0]
                 handler.subhandlers['log'].log_sent(
-                    channel, config.username, line)
+                    channel, config.USERNAME, line)
                 await client.privmsg(channel, line)
     await client.quit()
     await client.disconnect()
 
 
-async def main_async(loop, config: Config):
+async def main_async(loop, config):
     handler = Handler()
     client = irc.client.ServerConnection(handler, loop=loop)
+    if config.USERNAME:
+        username = config.USERNAME
+        password = config.PASSWORD
+    else:
+        username = config.DEFAULT_USERNAME
+        password = config.DEFAULT_PASSWORD
     await client.connect(
-        config.server, config.port, config.username, config.password,
-        caps=TWITCH_CAPS)
+        config.SERVER, config.PORT, username, password, caps=TWITCH_CAPS)
     await handler.welcomed.wait()
-    for c in config.channels:
+    for c in config.CHANNELS:
         await client.join('#'+c)
     task = loop.create_task(handle_stdin(loop, handler, client, config))
     try:
-        await client.wait_disconnected()
+        await client.disconnect()
     finally:
         task.cancel()
         try:
