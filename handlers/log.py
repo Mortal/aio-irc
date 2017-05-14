@@ -33,10 +33,10 @@ class Handler:
                 print("Invalid type %r" % e.type)
         if joins:
             join_msg = '%s joined' % ', '.join(e.source.nick for e in joins)
-            self.log_custom_message('-', join_msg, buf[0].target, 'joinpart')
+            self.log_custom_event('-', join_msg, buf[0].target, 'joinpart')
         if parts:
             part_msg = '%s parted' % ', '.join(e.source.nick for e in parts)
-            self.log_custom_message('-', part_msg, buf[0].target, 'joinpart')
+            self.log_custom_event('-', part_msg, buf[0].target, 'joinpart')
 
     def now_str(self):
         return datetime.datetime.now().isoformat()
@@ -51,10 +51,10 @@ class Handler:
         s = f'{event.target} {event.type} {source}'
         print(f'[{self.time_str()} {s.ljust(CHANNEL+NAME+1)}] {event.args}')
 
-    def log_custom_message(self, source, message, target, type):
+    def log_custom_event(self, source, message, target, type):
         event_dict = dict(target=target, source=source, msg=message, type=type)
         print(f'{self.now_str()} {repr(event_dict)}',
-              file=self.messages, flush=True)
+              file=self.events, flush=True)
         nick = getattr(source, 'nick', source)
         if type != 'pubmsg':
             nick = f'{type} {nick}'
@@ -103,7 +103,7 @@ class Handler:
     async def _handle_message(self, connection, event):
         self.print_message(event)
 
-    handle_pubmsg = handle_usernotice = handle_mode = _handle_message
+    handle_pubmsg = handle_usernotice = _handle_message
 
     async def _handle_event(self, connection, event):
         self.print_event(event)
