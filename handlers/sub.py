@@ -58,7 +58,7 @@ class Handler:
         name = event.source.split('!')[0]
         if name != 'twitchnotify':
             return
-        if not self.should_post(self, event.args, event.target):
+        if not self.should_post(event.args, event.target):
             return
         await self.post(connection, event.target)
 
@@ -69,6 +69,6 @@ class Handler:
             for k, v in [(kv['key'], kv['value'])]
         }
         system_msg = tags.get('system-msg') or ''
-        if not self.should_post(self, system_msg, event.target):
+        if not self.should_post(system_msg, event.target):
             return
         await self.post(connection, event.target)
