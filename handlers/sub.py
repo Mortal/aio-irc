@@ -34,17 +34,30 @@ def get_next_msg():
 
 
 class Handler:
-    async def handle_pubmsg(self, connection, event):
-        name = event.source.split('!')[0]
-        if name != 'twitchnotify':
-            # print("not twitchnotify")
+    def should_post(self, system_msg, target):
+        if not system_msg:
+            print("No system-msg")
             return
-        if 'just subscribed' not in event.args:
+        if 'just subscribed' not in system_msg:
             print('not "just subscribed"')
-            return
+            return False
+        if target != '#darbian':
+            print('not #darbian')
+            return False
+        return True
+
+    async def post(self, connection, target):
         msg = get_next_msg()
         print("Send message to %s: %r" % (event.target, msg))
         await connection.privmsg(event.target, msg)
+
+    async def handle_pubmsg(self, connection, event):
+        name = event.source.split('!')[0]
+        if name != 'twitchnotify':
+            return
+        if not self.should_post(self, event.args, event.target):
+            return
+        await self.post(connection, event.target)
 
     async def handle_usernotice(self, connection, event):
         tags = {
@@ -53,12 +66,6 @@ class Handler:
             for k, v in [(kv['key'], kv['value'])]
         }
         system_msg = tags.get('system-msg') or ''
-        if not system_msg:
-            print("No system-msg tag")
+        if not self.should_post(self, system_msg, event.target):
             return
-        if 'just subscribed' not in system_msg:
-            print('not "just subscribed"')
-            return
-        msg = get_next_msg()
-        print("Send message to %s: %r" % (event.target, msg))
-        await connection.privmsg(event.target, msg)
+        await self.post(connection, event.target)
