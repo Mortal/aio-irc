@@ -70,12 +70,12 @@ class Client:
         self.connection = irc.client.ServerConnection(
             self.event_handler, loop=loop)
         self.welcomed = asyncio.Event()
-        self.subhandlers = {
-            m: self.load_subhandler(m)
-            for m in 'hostnotify ping sub highlight log say'.split()
-        }
+        self.subhandlers = {}
 
     async def connect(self):
+        for m in 'hostnotify ping sub highlight log say'.split():
+            if m not in self.subhandlers:
+                self.subhandlers[m] = await self.load_subhandler(m)
         if self.config.USERNAME:
             username = self.config.USERNAME
             password = self.config.PASSWORD
@@ -136,12 +136,20 @@ class Client:
         if not args:
             print("Usage: /load module")
         for m in args:
+            prev = self.subhandlers.get(m)
             try:
-                self.subhandlers[m] = self.load_subhandler(m)
+                self.subhandlers[m] = r = self.load_subhandler(m)
             except HandlerImportError as exn:
                 print(exn)
+            else:
+                try:
+                    on_reload = r.reload
+                except AttributeError:
+                    pass
+                else:
+                    await on_reload(prev)
 
-    def load_subhandler(self, m):
+    async def load_subhandler(self, m):
         name = 'handlers.%s' % m
         try:
             mod = importlib.import_module(name)
@@ -156,6 +164,12 @@ class Client:
             r = handler_class()
         except Exception:
             raise HandlerImportError('Could not initialize %s.Handler' % name)
+        try:
+            on_load = r.load
+        except AttributeError:
+            pass
+        else:
+            await on_load(self)
         return r
 
     async def command_unload(self, args, showhide):
@@ -165,9 +179,16 @@ class Client:
             print("Usage: /unload module")
         for m in args:
             try:
-                del self.subhandlers[m]
+                r = self.subhandlers.pop(m)
             except KeyError:
                 print('Module %s not loaded' % m)
+                continue
+            try:
+                on_unload = r.unload
+            except AttributeError:
+                pass
+            else:
+                await on_unload(self)
 
     async def command_quit(self, args, showhide):
         showhide.show()
