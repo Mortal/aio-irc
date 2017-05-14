@@ -41,7 +41,7 @@ class Handler:
         if 'just subscribed' not in system_msg:
             print('not "just subscribed"')
             return False
-        if 'just subscribed to' not in system_msg:
+        if 'just subscribed to' in system_msg:
             print('"just subscribed to"')
             return False
         if target != '#darbian':
