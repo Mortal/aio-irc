@@ -18,6 +18,21 @@ MSGS = (
 )
 
 
+try:
+    last_msg
+except NameError:
+    last_msg = None
+
+
+def get_next_msg():
+    global last_msg
+    msg = random.choice(MSGS)
+    while msg == last_msg:
+        msg = random.choice(MSGS)
+    last_msg = msg
+    return msg
+
+
 class Handler:
     async def handle_pubmsg(self, connection, event):
         name = event.source.split('!')[0]
@@ -27,7 +42,7 @@ class Handler:
         if 'just subscribed' not in event.args:
             print('not "just subscribed"')
             return
-        msg = random.choice(MSGS)
+        msg = get_next_msg()
         print("Send message to %s: %r" % (event.target, msg))
         await connection.privmsg(event.target, msg)
 
@@ -44,6 +59,6 @@ class Handler:
         if 'just subscribed' not in system_msg:
             print('not "just subscribed"')
             return
-        msg = random.choice(MSGS)
+        msg = get_next_msg()
         print("Send message to %s: %r" % (event.target, msg))
         await connection.privmsg(event.target, msg)
