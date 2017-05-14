@@ -3,7 +3,7 @@ import asyncio
 import datetime
 
 
-NAME = 30
+NAME = 25
 
 
 class Handler:
