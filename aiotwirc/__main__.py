@@ -59,6 +59,10 @@ def init_logging(config):
       '[%(asctime)s %(type)10s] %(message)s')
 
 
+class HandlerImportError(Exception):
+    pass
+
+
 class Client:
     def __init__(self, config, loop):
         self.config = config
@@ -67,7 +71,7 @@ class Client:
             self.event_handler, loop=loop)
         self.welcomed = asyncio.Event()
         self.subhandlers = {
-            m: importlib.import_module('handlers.%s' % m).Handler()
+            m: self.load_subhandler(m)
             for m in 'hostnotify ping sub highlight log say'.split()
         }
 
@@ -129,23 +133,27 @@ class Client:
         if not args:
             print("Usage: /load module")
         for m in args:
-            name = 'handlers.%s' % m
             try:
-                mod = importlib.import_module(name)
-            except Exception:
-                print("Failed to load module %s" % name)
-                continue
-            importlib.reload(mod)
-            try:
-                handler_class = mod.Handler
-            except AttributeError:
-                print('Could not find %s.Handler' % name)
-                continue
-            try:
-                self.subhandlers[m] = handler_class()
-            except Exception:
-                print('Could not initialize %s.Handler' % name)
-                continue
+                self.subhandlers[m] = self.load_subhandler(m)
+            except HandlerImportError as exn:
+                print(exn)
+
+    def load_subhandler(self, m):
+        name = 'handlers.%s' % m
+        try:
+            mod = importlib.import_module(name)
+        except Exception:
+            raise HandlerImportError("Failed to load module %s" % name)
+        importlib.reload(mod)
+        try:
+            handler_class = mod.Handler
+        except AttributeError:
+            raise HandlerImportError('Could not find %s.Handler' % name)
+        try:
+            r = handler_class()
+        except Exception:
+            raise HandlerImportError('Could not initialize %s.Handler' % name)
+        return r
 
     async def command_unload(self, args, showhide):
         showhide.show()
