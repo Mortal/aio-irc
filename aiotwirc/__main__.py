@@ -105,7 +105,10 @@ class Client:
                 method, args = 'say', line
             await self.input_command(method, args, showhide)
             showhide.show()
-        await self.connection.quit()
+        try:
+            await self.connection.quit()
+        except irc.client.ServerNotConnectedError:
+            pass
         await self.connection.disconnect()
 
     async def event_handler(self, connection, event):
