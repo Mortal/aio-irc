@@ -68,7 +68,7 @@ class Client:
         self.welcomed = asyncio.Event()
         self.subhandlers = {
             m: importlib.import_module('handlers.%s' % m).Handler()
-            for m in 'hostnotify ping sub highlight log'.split()
+            for m in 'hostnotify ping sub highlight log say'.split()
         }
 
     async def connect(self):
@@ -120,10 +120,12 @@ class Client:
                        event.type))
                 traceback.print_exc()
 
-    async def handle_welcome(self, event):
+    async def handle_welcome(self, connection, event):
         self.welcomed.set()
 
-    async def command_load(self, *args):
+    async def command_load(self, args, showhide):
+        showhide.show()
+        args = args.split()
         if not args:
             print("Usage: /load module")
         for m in args:
@@ -145,7 +147,9 @@ class Client:
                 print('Could not initialize %s.Handler' % name)
                 continue
 
-    async def command_unload(self, *args):
+    async def command_unload(self, args, showhide):
+        showhide.show()
+        args = args.split()
         if not args:
             print("Usage: /unload module")
         for m in args:
@@ -154,34 +158,18 @@ class Client:
             except KeyError:
                 print('Module %s not loaded' % m)
 
-    async def command_quit(self, *args):
+    async def command_quit(self, args, showhide):
+        showhide.show()
         try:
-            await self.connection.quit(' '.join(args))
+            await self.connection.quit(args)
         except irc.client.ServerNotConnectedError:
             pass
         await self.connection.disconnect()
         assert not self.connection.connected
 
-    async def command_quot(self, *args):
-        await self.connection.send_items(*args)
-
-    async def command_say(self, args, showhide):
-        if args.strip() == '':
-            showhide.hide()
-            return
-        if not self.config.USERNAME:
-            showhide.show()
-            return 'Not logged in! ' + self.config.USERNAME
-        elif len(self.config.CHANNELS) != 1:
-            showhide.show()
-            print("Wrong number of channels in config (%r)" %
-                  len(self.config.CHANNELS))
-        else:
-            showhide.hide()
-            channel = '#'+self.config.CHANNELS[0]
-            self.subhandlers['log'].log_sent(
-                channel, self.config.USERNAME, args)
-            await self.connection.privmsg(channel, args)
+    async def command_quot(self, args, showhide):
+        showhide.show()
+        await self.connection.send_items(args)
 
     def find_command(self, method, args, showhide):
         method_lower = method.lower()
@@ -204,6 +192,7 @@ class Client:
     async def input_command(self, method, args, showhide):
         fn = self.find_command(method, args, showhide)
         if fn is None:
+            showhide.show()
             print('Invalid method %r' % method)
             return
         try:
