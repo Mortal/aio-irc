@@ -112,9 +112,10 @@ class Client:
             try:
                 await method(connection, event)
             except Exception:
-                print('Exception in %s.%s' %
+                print('Exception in %s.%s.%s' %
                       (handler.__class__.__module__,
-                       handler.__qualname__))
+                       handler.__class__.__name__,
+                       getattr(handler, '__name__')))
                 traceback.print_exc()
 
     async def handle_welcome(self, connection, event):
