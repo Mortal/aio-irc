@@ -1,10 +1,65 @@
 import re
 import asyncio
 import datetime
+import traceback
 
 
 CHANNEL = 12
 NAME = 25
+
+
+def adorn_name(name, tags, width):
+    badges = tags.get('badges') or ''
+    if 'staff' in badges:
+        prefix = '&'
+    elif 'moderator' in badges:
+        prefix = '@'
+    elif 'subscriber' in badges:
+        prefix = '+'
+    elif 'premium' in badges or 'bits' in badges or 'turbo' in badges:
+        prefix = '-'
+    else:
+        prefix = ''
+    padding = width - len(name) - len(prefix)
+    if tags.get('color'):
+        mo = re.match(r'^#(..)(..)(..)$', tags['color'])
+        r, g, b = [int(v, 16) for v in mo.group(1, 2, 3)]
+        light = max(r, g, b)
+        if light > 32:
+            name = '\x1B[38;2;%s;%s;%sm%s\x1B[39m' % (r, g, b, name)
+    name = prefix + name
+    if padding > 0:
+        name = ' ' * padding + name
+    return name
+
+
+COLORS = {
+    None: '33',
+    'darbSubPipe': '32',
+}
+
+
+def adorn_emotes(message, tags):
+    if not tags.get('emotes'):
+        return message
+    images = tags['emotes'].split('/')
+    positions = []
+    for img in images:
+        emote_id, poses = img.split(':')
+        for pos in poses.split(','):
+            start, stop = map(int, pos.split('-'))
+            positions.append((start, stop+1, emote_id))
+    output = ''
+    positions.sort()
+    prev = 0
+    for start, stop, emote_id in positions:
+        output += message[prev:start]
+        emote = message[start:stop]
+        output += '\x1B[%sm%s\x1B[0m' % (COLORS.get(emote) or COLORS[None],
+                                         emote)
+        prev = stop
+    output += message[prev:]
+    return output
 
 
 class Handler:
@@ -83,14 +138,13 @@ class Handler:
             data['tags'] = tags
         print(f'{self.now_str()} {repr(data)}',
               file=self.messages, flush=True)
-        name_pad = name.rjust(NAME)
-        if tags.get('color'):
-            mo = re.match(r'^#(..)(..)(..)$', tags['color'])
-            r, g, b = [int(v, 16) for v in mo.group(1, 2, 3)]
-            light = max(r, g, b)
-            if light > 32:
-                name_pad = '\x1B[38;2;%s;%s;%sm%s\x1B[39m' % (r, g, b, name_pad)
-        print(f'[{self.time_str()} {event.target.ljust(CHANNEL)} {name_pad}] {event.args}')
+        name = adorn_name(name, tags, NAME)
+        msg = event.args
+        try:
+            msg = adorn_emotes(msg, tags)
+        except Exception:
+            traceback.print_exc()
+        print(f'[{self.time_str()} {event.target.ljust(CHANNEL)} {name}] {msg}')
 
     def log_sent(self, target, username, message):
         type = 'sent'
