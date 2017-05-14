@@ -5,7 +5,7 @@ import asyncio
 class Handler:
     async def handle_ping(self, connection, event):
         await self._handle_any(connection, event)
-        await connection.pong(event.target)
+        await connection.pong(event.args)
 
     async def _handle_any(self, connection, event):
         self._last_event = time.time()
