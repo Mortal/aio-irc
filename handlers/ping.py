@@ -29,7 +29,6 @@ class Handler:
     async def _idle_ping(self):
         while True:
             wait_amount = self._last_event + self._pingevery - time.time()
-            print(wait_amount)
             if wait_amount > 0:
                 try:
                     await asyncio.wait_for(self._change_pingevery.wait(),
@@ -49,14 +48,12 @@ class Handler:
     async def _ping(self):
         self._counter += 1
         c = str(self._counter)
-        print("Registering pong %r" % c)
         self._pongs[c] = asyncio.Future()
         await self._client.connection.ping(c)
         await self._pongs[c]
         del self._pongs[c]
 
     async def handle_pong(self, connection, event):
-        print("PONG %r" % event.args)
         await self._handle_any(connection, event)
         try:
             self._pongs[event.args].set_result(None)
