@@ -3,6 +3,9 @@ import asyncio
 import datetime
 
 
+NAME = 30
+
+
 class Handler:
     def __init__(self):
         self.messages = open('messages.txt', 'a')
@@ -54,7 +57,7 @@ class Handler:
         nick = getattr(source, 'nick', source)
         if type != 'pubmsg':
             nick = f'{type} {nick}'
-        print(f'[{self.time_str()} {target:<12} {nick:>30}] {message}')
+        print(f'[{self.time_str()} {target:<12} {nick.rjust(NAME)}] {message}')
 
     def print_message(self, event):
         tags = {
@@ -75,7 +78,7 @@ class Handler:
             data['tags'] = tags
         print(f'{self.now_str()} {repr(data)}',
               file=self.messages, flush=True)
-        name_pad = name.rjust(30)
+        name_pad = name.rjust(NAME)
         if tags.get('color'):
             mo = re.match(r'^#(..)(..)(..)$', tags['color'])
             r, g, b = [int(v, 16) for v in mo.group(1, 2, 3)]
@@ -94,7 +97,7 @@ class Handler:
         }
         print(f'{self.now_str()} {repr(data)}',
               file=self.messages, flush=True)
-        print(f'[{self.time_str()} {target:<12} {username:>30}] {message}')
+        print(f'[{self.time_str()} {target:<12} {username.rjust(NAME)}] {message}')
 
     async def _handle_message(self, connection, event):
         self.print_message(event)
