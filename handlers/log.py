@@ -5,7 +5,7 @@ import traceback
 
 
 CHANNEL = 12
-NAME = 25
+NAME = 21
 
 
 def adorn_name(name, tags, width):
