@@ -38,7 +38,7 @@ class Handler:
         if not system_msg:
             print("No system-msg")
             return
-        if 'just subscribed' not in system_msg:
+        if 'just subscribed' not in system_msg and 'subscribed for' not in system_msg:
             print('not "just subscribed"')
             return False
         if 'just subscribed to' in system_msg:
