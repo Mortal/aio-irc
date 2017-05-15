@@ -4,8 +4,7 @@ import datetime
 import traceback
 
 
-CHANNEL = 12
-NAME = 21
+WIDTH = 43
 
 
 def adorn_name(name, tags, width):
@@ -107,8 +106,8 @@ class Handler:
         print(f'{self.now_str()} {repr(event)}',
               file=self.events, flush=True)
         source = getattr(event.source, 'nick', event.source)
-        s = f'{event.target} {event.type} {source}'
-        print(f'[{self.time_str()} {s.ljust(CHANNEL+NAME+1)}] {event.args}')
+        s = f'{self.time_str()} {event.target} {event.type} {source}'
+        print(f'[{s.ljust(WIDTH)}] {event.args}')
 
     def log_custom_event(self, source, message, target, type):
         event_dict = dict(target=target, source=source, msg=message, type=type)
@@ -117,7 +116,9 @@ class Handler:
         nick = getattr(source, 'nick', source)
         if type != 'pubmsg':
             nick = f'{type} {nick}'
-        print(f'[{self.time_str()} {target.ljust(CHANNEL)} {nick.rjust(NAME)}] {message}')
+        s = f'{self.time_str()} {target} '
+        s += nick.rjust(WIDTH - len(s))
+        print(f'[{s}] {message}')
 
     def print_message(self, event):
         tags = {
@@ -138,13 +139,14 @@ class Handler:
             data['tags'] = tags
         print(f'{self.now_str()} {repr(data)}',
               file=self.messages, flush=True)
-        name = adorn_name(name, tags, NAME)
+        s = f'{self.time_str()} {event.target} '
+        s += adorn_name(name, tags, WIDTH - len(s))
         msg = event.args
         try:
             msg = adorn_emotes(msg, tags)
         except Exception:
             traceback.print_exc()
-        print(f'[{self.time_str()} {event.target.ljust(CHANNEL)} {name}] {msg}')
+        print(f'[{s}] {msg}')
 
     def log_sent(self, target, username, message):
         type = 'sent'
@@ -156,7 +158,9 @@ class Handler:
         }
         print(f'{self.now_str()} {repr(data)}',
               file=self.messages, flush=True)
-        print(f'[{self.time_str()} {target.ljust(CHANNEL)} {username.rjust(NAME)}] {message}')
+        s = f'{self.time_str()} {target} '
+        s += username.rjust(WIDTH - len(s))
+        print(f'[{s}] {message}')
 
     async def _handle_message(self, connection, event):
         self.print_message(event)
