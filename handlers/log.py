@@ -38,7 +38,7 @@ def default_color(name):
     return r
 
 
-def adorn_name(name, tags, width):
+def adorn_name(name, tags, width, highlight):
     badges = tags.get('badges') or ''
     if 'staff' in badges:
         prefix = '&'
@@ -51,6 +51,7 @@ def adorn_name(name, tags, width):
     else:
         prefix = ''
     padding = width - len(name) - len(prefix)
+    name = adorn_highlight(name, highlight)
     color = tags.get('color') or default_color(name)
     mo = re.match(r'^#(..)(..)(..)$', color)
     r, g, b = [int(v, 16) for v in mo.group(1, 2, 3)]
@@ -69,9 +70,17 @@ COLORS = {
 }
 
 
-def adorn_emotes(message, tags):
+def adorn_highlight(message, pattern):
+    if pattern:
+        message = re.sub(pattern,
+                         lambda mo: '\x1B[1m%s\x1B[0m' % mo.group(),
+                         message)
+    return message
+
+
+def adorn_message(message, tags, highlight):
     if not tags.get('emotes'):
-        return message
+        return adorn_highlight(message, highlight)
     images = tags['emotes'].split('/')
     positions = []
     for img in images:
@@ -89,7 +98,7 @@ def adorn_emotes(message, tags):
                                          emote)
         prev = stop
     output += message[prev:]
-    return output
+    return adorn_highlight(output, highlight)
 
 
 class Handler:
@@ -99,7 +108,10 @@ class Handler:
         self.joinparts = []
         self._delayed_print_joinpart_task = None
 
-    async def unload(self):
+    async def load(self, client):
+        self.client = client
+
+    async def unload(self, client):
         self.messages.close()
         self.events.close()
 
@@ -171,10 +183,11 @@ class Handler:
         print(f'{self.now_str()} {repr(data)}',
               file=self.messages, flush=True)
         s = f'{self.time_str()} {event.target} '
-        s += adorn_name(name, tags, WIDTH - len(s))
+        highlight = self.client.config.HIGHLIGHT
+        s += adorn_name(name, tags, WIDTH - len(s), highlight)
         msg = event.args
         try:
-            msg = adorn_emotes(msg, tags)
+            msg = adorn_message(msg, tags, highlight)
         except Exception:
             traceback.print_exc()
         print(f'[{s}] {msg}')
