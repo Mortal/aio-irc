@@ -11,4 +11,4 @@ class Handler:
         if re.search(self.pattern, event.args):
             create_and_show_notification(
                 'From %s in %s' % (event.source.split('!')[0], event.target),
-                event.args)
+                event.args, key='highlight')
