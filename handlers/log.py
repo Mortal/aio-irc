@@ -1,10 +1,41 @@
 import re
+import random
 import asyncio
 import datetime
 import traceback
 
 
 WIDTH = 43
+
+# https://discuss.dev.twitch.tv/t/default-user-color-in-chat/385/2
+DEFAULT_COLORS = [
+    ["Red", "#FF0000"],
+    ["Blue", "#0000FF"],
+    ["Green", "#00FF00"],
+    ["FireBrick", "#B22222"],
+    ["Coral", "#FF7F50"],
+    ["YellowGreen", "#9ACD32"],
+    ["OrangeRed", "#FF4500"],
+    ["SeaGreen", "#2E8B57"],
+    ["GoldenRod", "#DAA520"],
+    ["Chocolate", "#D2691E"],
+    ["CadetBlue", "#5F9EA0"],
+    ["DodgerBlue", "#1E90FF"],
+    ["HotPink", "#FF69B4"],
+    ["BlueViolet", "#8A2BE2"],
+    ["SpringGreen", "#00FF7F"],
+]
+
+
+def default_color(name):
+    try:
+        return default_color.cache[name]
+    except KeyError:
+        pass
+    except AttributeError:
+        default_color.cache = {}
+    default_color.cache[name] = r = random.Random(name).choice(DEFAULT_COLORS)[1]
+    return r
 
 
 def adorn_name(name, tags, width):
@@ -20,12 +51,12 @@ def adorn_name(name, tags, width):
     else:
         prefix = ''
     padding = width - len(name) - len(prefix)
-    if tags.get('color'):
-        mo = re.match(r'^#(..)(..)(..)$', tags['color'])
-        r, g, b = [int(v, 16) for v in mo.group(1, 2, 3)]
-        light = max(r, g, b)
-        if light > 32:
-            name = '\x1B[38;2;%s;%s;%sm%s\x1B[39m' % (r, g, b, name)
+    color = tags.get('color') or default_color(name)
+    mo = re.match(r'^#(..)(..)(..)$', color)
+    r, g, b = [int(v, 16) for v in mo.group(1, 2, 3)]
+    light = max(r, g, b)
+    if light > 32:
+        name = '\x1B[38;2;%s;%s;%sm%s\x1B[39m' % (r, g, b, name)
     name = prefix + name
     if padding > 0:
         name = ' ' * padding + name
