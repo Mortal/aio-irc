@@ -51,8 +51,8 @@ class Handler:
 
     async def post(self, connection, target):
         msg = get_next_msg()
-        print("Send message to %s: %r" % (event.target, msg))
-        await connection.privmsg(event.target, msg)
+        print("Send message to %s: %r" % (target, msg))
+        await connection.privmsg(target, msg)
 
     async def handle_pubmsg(self, connection, event):
         name = event.source.split('!')[0]
