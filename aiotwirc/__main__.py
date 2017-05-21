@@ -1,4 +1,5 @@
 import sys
+import time
 import types
 import asyncio
 import inspect
@@ -63,6 +64,7 @@ class Client:
             self.event_handler, loop=loop)
         self.welcomed = asyncio.Event()
         self.subhandlers = {}
+        self.intentional_disconnect = False
 
     async def connect(self):
         for m in 'hostnotify ping sub highlight log say'.split():
@@ -97,6 +99,7 @@ class Client:
                 method, args = 'say', line
             await self.input_command(method, args, showhide)
             showhide.show()
+        self.intentional_disconnect = True
         try:
             await self.connection.quit()
         except irc.client.ServerNotConnectedError:
@@ -184,6 +187,7 @@ class Client:
                 await on_unload(self)
 
     async def command_quit(self, args, showhide):
+        self.intentional_disconnect = True
         showhide.show()
         try:
             await self.connection.quit(args)
@@ -247,17 +251,31 @@ class ShowHide:
 
 
 async def main_async(loop, config, args):
-    client = Client(config, loop, args)
-    await client.connect()
-    task = loop.create_task(client.handle_stdin())
-    try:
-        await client.connection.wait_disconnected()
-    finally:
-        task.cancel()
+    delay = 0
+    while True:
+        client = Client(config, loop, args)
+        await client.connect()
+        task = loop.create_task(client.handle_stdin())
         try:
-            await task
-        except asyncio.CancelledError:
-            pass
+            t1 = time.time()
+            await client.connection.wait_disconnected()
+            t2 = time.time()
+        finally:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        if client.intentional_disconnect:
+            break
+        elapsed = t2 - t1
+        if elapsed < 60:
+            delay = 2 * delay or 2
+            print("We were disconnected. Try again in %s seconds" % delay)
+            await asyncio.sleep(delay)
+        else:
+            print("We were disconnected. Try again.")
+            delay = 0
 
 
 def main():
