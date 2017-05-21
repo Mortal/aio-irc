@@ -54,8 +54,10 @@ class HandlerImportError(Exception):
 
 
 class Client:
-    def __init__(self, config, loop):
+    def __init__(self, config, loop, args):
         self.config = config
+        if args.channel:
+            self.config.CHANNELS = args.channel
         self.loop = loop
         self.connection = irc.client.ServerConnection(
             self.event_handler, loop=loop)
@@ -244,8 +246,8 @@ class ShowHide:
             self._hide()
 
 
-async def main_async(loop, config):
-    client = Client(config, loop)
+async def main_async(loop, config, args):
+    client = Client(config, loop, args)
     await client.connect()
     task = loop.create_task(client.handle_stdin())
     try:
@@ -260,11 +262,12 @@ async def main_async(loop, config):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.parse_args()
+    parser.add_argument('channel', nargs='*')
+    args = parser.parse_args()
     config = read_config()
     init_logging(config)
     loop = asyncio.get_event_loop()
-    main_task = loop.create_task(main_async(loop, config))
+    main_task = loop.create_task(main_async(loop, config, args))
     try:
         loop.run_until_complete(main_task)
     except KeyboardInterrupt:
