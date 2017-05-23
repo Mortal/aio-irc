@@ -24,6 +24,7 @@ BASE_CONFIG = dict(
     PORT=6667,
     CAPS='twitch.tv/tags twitch.tv/commands twitch.tv/membership',
     CHANNELS=(),
+    PLUGINS='hostnotify ping sub highlight log say'.split(),
 )
 
 
@@ -67,9 +68,11 @@ class Client:
         self.intentional_disconnect = False
 
     async def connect(self):
-        for m in 'hostnotify ping sub highlight log say'.split():
+        for m in self.config.PLUGINS:
             if m not in self.subhandlers:
                 self.subhandlers[m] = await self.load_subhandler(m)
+        if 'say' not in self.subhandlers:
+            print("Remember to /load say")
         if self.config.USERNAME:
             username = self.config.USERNAME
             password = self.config.PASSWORD
