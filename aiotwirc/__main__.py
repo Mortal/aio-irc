@@ -87,7 +87,8 @@ class Client:
             await self.connection.join('#'+c)
 
     async def handle_stdin(self):
-        async for linedata in async_readlines(self.loop):
+        self.readlines = async_readlines(self.loop)
+        async for linedata in self.readlines:
             try:
                 line = linedata.decode()
             except UnicodeDecodeError:
@@ -264,6 +265,10 @@ async def main_async(loop, config, args):
             await client.connection.wait_disconnected()
             t2 = time.time()
         finally:
+            try:
+                client.readlines.close()
+            except Exception:
+                pass
             task.cancel()
             try:
                 await task
