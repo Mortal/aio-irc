@@ -11,35 +11,47 @@ class DumbLine(bytes):
         pass
 
 
-async def async_readlines_dumb(loop):
-    fp = sys.stdin.buffer
+class AsyncReadlinesDumb:
+    def __init__(self, loop):
+        self.loop = loop
+        self.fp = sys.stdin.buffer
+        self.buf = b''
+        self.eof = object()
+        self.queue = asyncio.Queue()
 
-    buf = b''
-    eof = object()
-    queue = asyncio.Queue()
+    def close(self):
+        pass
 
-    def on_readable():
-        s = fp.read1(4096)
+    def on_readable(self):
+        s = self.fp.read1(4096)
         if s == b'':
-            queue.put_nowait(eof)
-            loop.remove_reader(fp)
+            self.queue.put_nowait(self.eof)
+            self.loop.remove_reader(self.fp)
         else:
-            nonlocal buf
-            buf += s
-            linedata, nl, buf = buf.rpartition(b'\n')
+            self.buf += s
+            linedata, nl, self.buf = self.buf.rpartition(b'\n')
             if nl:
                 for line in linedata.split(b'\n'):
-                    queue.put_nowait(line)
+                    self.queue.put_nowait(line)
 
-    loop.add_reader(fp, on_readable)
-    while True:
+    def get_buffer(self):
+        raise NotImplementedError()
+
+    def set_buffer(self, s):
+        raise NotImplementedError()
+
+    def __aiter__(self):
+        self.loop.add_reader(self.fp, self.on_readable)
+        return self
+
+    async def __anext__(self):
         try:
-            o = await queue.get()
+            o = await self.queue.get()
         except asyncio.CancelledError:
-            break
-        if o is eof:
-            break
-        yield DumbLine(o)
+            raise StopAsyncIteration()
+        if o is self.eof:
+            raise StopAsyncIteration()
+        return DumbLine(o)
 
 
 class TermiosLine(bytes):
@@ -52,9 +64,36 @@ class TermiosLine(bytes):
         sys.stdout.buffer.flush()
 
 
-async def async_readlines_termios(loop):
+class AsyncReadlinesTermios:
+    def __init__(self, loop):
+        self.loop = loop
+        self.stack = None
+
+        self.fp = sys.stdin.buffer
+        self.buf = b''
+        self.eof = object()
+        self.queue = asyncio.Queue()
+
+    def close(self):
+        if self.stack:
+            self.stack.close()
+            self.stack = None
+
+    def __del__(self):
+        self.close()
+
+    def __aiter__(self):
+        self.loop.add_reader(self.fp, self.on_readable)
+        with contextlib.ExitStack() as stack:
+            stack.callback(lambda: self.loop.remove_reader(self.fp))
+            stack.enter_context(self.setcbreak(0))
+            stack.enter_context(self.wrap_write(sys.stdout))
+            stack.enter_context(self.wrap_write(sys.stderr))
+            self.stack = stack.pop_all()
+        return self
+
     @contextlib.contextmanager
-    def setcbreak(fd):
+    def setcbreak(self, fd):
         old = termios.tcgetattr(0)
         new = termios.tcgetattr(0)
         new[tty.LFLAG] = new[tty.LFLAG] & ~(termios.ECHO | termios.ICANON)
@@ -68,7 +107,7 @@ async def async_readlines_termios(loop):
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
     @contextlib.contextmanager
-    def wrap_write(fp):
+    def wrap_write(self, fp):
         old_write = fp.write
         write_buf = ''
 
@@ -77,9 +116,9 @@ async def async_readlines_termios(loop):
             write_buf += s
             lines, nl, write_buf = write_buf.rpartition('\n')
             if nl:
-                if buf:
+                if self.buf:
                     r = fp.buffer.write(
-                        b'\r\x1B[K%s%s' % ((lines+nl).encode(), buf))
+                        b'\r\x1B[K%s%s' % ((lines+nl).encode(), self.buf))
                     fp.buffer.flush()
                 else:
                     r = old_write(lines+nl, *args, **kwargs)
@@ -94,63 +133,65 @@ async def async_readlines_termios(loop):
             if write_buf:
                 fp.write(write_buf)
 
-    fp = sys.stdin.buffer
+    def get_buffer(self):
+        return s.decode('utf8', errors='replace')
 
-    buf = b''
-    eof = object()
-    queue = asyncio.Queue()
+    def set_buffer(self, s):
+        if isinstance(s, str):
+            s = s.encode('utf8')
+        if not isinstance(s, bytes):
+            raise TypeError(type(s))
+        self.buf = s
+        sys.stdout.buffer.write(b'\r\x1B[K' + self.buf)
+        sys.stdout.buffer.flush()
 
-    def on_readable():
-        nonlocal buf
-        s = fp.read1(1)
-        if s == b'' or (s == b'\x04' and not buf):  # CTRL-D
-            queue.put_nowait(eof)
-            loop.remove_reader(fp)
+    def on_readable(self):
+        s = self.fp.read1(1)
+        if s == b'' or (s == b'\x04' and not self.buf):  # CTRL-D
+            self.queue.put_nowait(self.eof)
         elif s in (b'\x08', b'\x7F'):  # CTRL-H
-            if buf:
-                buf = buf[:-1]
+            if self.buf:
+                self.buf = self.buf[:-1]
                 sys.stdout.buffer.write(b'\x08\x1B[K')
                 sys.stdout.buffer.flush()
         elif s == b'\x15':  # CTRL-U
-            if buf:
-                buf = b''
+            if self.buf:
+                self.buf = b''
                 sys.stdout.buffer.write(b'\r\x1B[K')
                 sys.stdout.buffer.flush()
         elif s == b'\x17':  # CTRL-W
-            if buf:
-                buf = buf.rstrip()
-                buf = buf[:buf.rfind(b' ')+1]
-                sys.stdout.buffer.write(b'\r\x1B[K' + buf)
+            if self.buf:
+                self.buf = self.buf.rstrip()
+                self.buf = self.buf[:self.buf.rfind(b' ')+1]
+                sys.stdout.buffer.write(b'\r\x1B[K' + self.buf)
                 sys.stdout.buffer.flush()
         elif s == b'\n':
-            queue.put_nowait(buf)
-            buf = b''
+            self.queue.put_nowait(self.buf)
+            self.buf = b''
         else:
             if s < b' ':
                 s = b'^' + bytes([s[0] + 64])
             sys.stdout.buffer.write(s)
             sys.stdout.buffer.flush()
-            buf += s
+            self.buf += s
 
-    loop.add_reader(fp, on_readable)
-    with contextlib.ExitStack() as stack:
-        stack.enter_context(setcbreak(0))
-        stack.enter_context(wrap_write(sys.stdout))
-        stack.enter_context(wrap_write(sys.stderr))
-        while True:
-            try:
-                o = await queue.get()
-            except asyncio.CancelledError:
-                break
-            if o is eof:
-                break
-            yield TermiosLine(o)
+    async def __anext__(self):
+        try:
+            o = await self.queue.get()
+        except asyncio.CancelledError:
+            o = self.eof
+        if o is self.eof:
+            if self.stack:
+                self.stack.close()
+                self.stack = None
+            raise StopAsyncIteration()
+        return TermiosLine(o)
 
 
 try:
     import termios  # noqa
     import tty  # noqa
 except ImportError:
-    async_readlines = async_readlines_dumb
+    async_readlines = AsyncReadlinesDumb
 else:
-    async_readlines = async_readlines_termios
+    async_readlines = AsyncReadlinesTermios
