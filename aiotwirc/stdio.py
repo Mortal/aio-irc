@@ -134,7 +134,7 @@ class AsyncReadlinesTermios:
                 fp.write(write_buf)
 
     def get_buffer(self):
-        return s.decode('utf8', errors='replace')
+        return self.buf.decode('utf8', errors='replace')
 
     def set_buffer(self, s):
         if isinstance(s, str):
