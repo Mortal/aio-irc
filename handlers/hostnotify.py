@@ -28,6 +28,8 @@ def create_and_show_notification(summary, message, icon=None, key=None):
 
 
 class Handler:
+    async def load(self, client):
+        self.client = client
 
     async def handle_hosttarget(self, connection, event):
         hosting_channel = event.target.lstrip('#')
@@ -42,3 +44,6 @@ class Handler:
         create_and_show_notification(summary, message, key='hosttarget')
         if target_channel == '-' and not spamming(60):
             webbrowser.open('https://twitch.tv/' + hosting_channel)
+        if hosting_channel == 'darbian' and target_channel == '-':
+            self.client.set_default_msg(
+                'darbBro hi chat, hi darb, good luck on the runs tonight!')
