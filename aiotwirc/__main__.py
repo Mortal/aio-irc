@@ -112,9 +112,12 @@ class Client:
 
     def set_default_msg(self, msg):
         last_buffer_set = getattr(self, 'last_buffer_set', '')
-        if self.readlines.get_buffer() in (last_buffer_set, ''):
+        current_buf = self.readlines.get_buffer()
+        if current_buf in (last_buffer_set, ''):
             self.readlines.set_buffer(msg)
             self.last_buffer_set = msg
+        else:
+            print("Not overriding %r with %r" % (current_buf, msg))
 
     async def event_handler(self, connection, event):
         if event.type == 'all_raw_messages':
