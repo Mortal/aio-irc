@@ -284,6 +284,7 @@ async def main_async(loop, config, args):
             except asyncio.CancelledError:
                 pass
         if client.intentional_disconnect:
+            print("Intentionally disconnecting")
             break
         elapsed = t2 - t1
         if elapsed < 60:
@@ -293,6 +294,7 @@ async def main_async(loop, config, args):
         else:
             print("We were disconnected. Try again.")
             delay = 0
+    print("main_async is done")
 
 
 def main():
@@ -314,4 +316,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except:
+        print("Exiting main() via an exception")
+        traceback.print_exc()
+        raise
+    else:
+        print("Exiting main() without an exception")
