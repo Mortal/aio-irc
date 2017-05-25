@@ -107,6 +107,7 @@ class Handler:
         self.events = open('events.txt', 'a')
         self.joinparts = []
         self._delayed_print_joinpart_task = None
+        self.recent_chatters = []
 
     async def load(self, client):
         self.client = client
@@ -114,6 +115,9 @@ class Handler:
     async def unload(self, client):
         self.messages.close()
         self.events.close()
+
+    async def reload(self, prev):
+        self.recent_chatters = getattr(prev, 'recent_chatters', [])
 
     async def _delayed_print_joinpart(self):
         buf = []
@@ -170,6 +174,11 @@ class Handler:
             for k, v in [(kv['key'], kv['value'])]
         }
         name = tags.get('display-name') or event.source.nick
+        try:
+            self.recent_chatters.remove(name)
+        except ValueError:
+            pass
+        self.recent_chatters.append(name)
         data = {
             'target': event.target,
             'source': event.source,
