@@ -96,7 +96,7 @@ class Handler:
 
     def get_command(self, msg):
         for command, pattern in RULES.items():
-            if re.search(pattern, msg):
+            if re.search(pattern, msg, re.I):
                 return command
 
     async def handle_pubmsg(self, connection, event):
