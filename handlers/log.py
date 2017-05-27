@@ -64,6 +64,14 @@ def adorn_name(name, tags, width, highlight):
     return name
 
 
+def adorn_channel(name):
+    color = default_color(name)
+    mo = re.match(r'^#(..)(..)(..)$', color)
+    r, g, b = [int(v, 16) for v in mo.group(1, 2, 3)]
+    name = '\x1B[38;2;%s;%s;%sm%s\x1B[39m' % (r, g, b, name)
+    return name
+
+
 COLORS = {
     None: '33',
     'darbSubPipe': '32',
@@ -153,8 +161,11 @@ class Handler:
         print(f'{self.now_str()} {repr(event)}',
               file=self.events, flush=True)
         source = getattr(event.source, 'nick', event.source)
-        s = f'{self.time_str()} {event.target} {event.type} {source}'
-        print(f'[{s.ljust(WIDTH)}] {event.args}')
+        s1 = self.time_str() + ' '
+        s2 = f' {event.type} {source}'
+        l = len(s1) + len(s2) + len(event.target)
+        s = (s1 + adorn_channel(event.target) + s2) + ' ' * (WIDTH - l)
+        print(f'[{s}] {event.args}')
 
     def log_custom_event(self, source, message, target, type):
         event_dict = dict(target=target, source=source, msg=message, type=type)
@@ -163,8 +174,10 @@ class Handler:
         nick = getattr(source, 'nick', source)
         if type != 'pubmsg':
             nick = f'{type} {nick}'
-        s = f'{self.time_str()} {target} '
-        s += nick.rjust(WIDTH - len(s))
+        s = self.time_str() + ' '
+        l = len(s) + len(target) + 1
+        s += adorn_channel(target) + ' '
+        s += nick.rjust(WIDTH - l)
         print(f'[{s}] {message}')
 
     def print_message(self, event):
@@ -191,9 +204,11 @@ class Handler:
             data['tags'] = tags
         print(f'{self.now_str()} {repr(data)}',
               file=self.messages, flush=True)
-        s = f'{self.time_str()} {event.target} '
+        s = self.time_str() + ' '
+        l = len(s) + len(event.target) + 1
+        s += adorn_channel(event.target) + ' '
         highlight = self.client.config.HIGHLIGHT
-        s += adorn_name(name, tags, WIDTH - len(s), highlight)
+        s += adorn_name(name, tags, WIDTH - l, highlight)
         msg = event.args
         try:
             msg = adorn_message(msg, tags, highlight)
