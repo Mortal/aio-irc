@@ -48,7 +48,7 @@ RULES = {
     # !age
     # 'How old is darbian?'
 
-    '!category': r'd-4 mean.*\?',
+    '!category': r'd-4 (mean|stand).*\?',
     # !category
     # '@Darbian what is d-4 means my man?'
     # 'what does d-4 means?'
