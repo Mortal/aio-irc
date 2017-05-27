@@ -276,6 +276,12 @@ async def main_async(loop, config, args):
             await client.connection.wait_disconnected()
             t2 = time.time()
         finally:
+            # client.readlines.close() and task.cancel()
+            # looks like an EOF on the keyboard, which sets
+            # client.intentional_disconnect to True.
+            # Capture client.intentional_disconnect before
+            # canceling the task.
+            intentional_disconnect = client.intentional_disconnect
             try:
                 client.readlines.close()
             except Exception:
@@ -285,7 +291,7 @@ async def main_async(loop, config, args):
                 await task
             except asyncio.CancelledError:
                 pass
-        if client.intentional_disconnect:
+        if intentional_disconnect:
             print("Intentionally disconnecting")
             break
         elapsed = t2 - t1
