@@ -148,6 +148,7 @@ class AsyncReadlinesTermios:
     def on_readable(self):
         s = self.fp.read1(1)
         if s == b'' or (s == b'\x04' and not self.buf):  # CTRL-D
+            print("Read %s -- treating as EOF" % repr(s))
             self.queue.put_nowait(self.eof)
         elif s in (b'\x08', b'\x7F'):  # CTRL-H
             if self.buf:
@@ -179,6 +180,7 @@ class AsyncReadlinesTermios:
         try:
             o = await self.queue.get()
         except asyncio.CancelledError:
+            print("AsyncReadlinesTermios.__anext__ was cancelled! Returning EOF")
             o = self.eof
         if o is self.eof:
             if self.stack:

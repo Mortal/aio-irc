@@ -103,6 +103,7 @@ class Client:
                 method, args = 'say', line
             await self.input_command(method, args, showhide)
             showhide.show()
+        print("Finished reading lines from stdin, disconnecting...")
         self.intentional_disconnect = True
         try:
             await self.connection.quit()
@@ -200,6 +201,7 @@ class Client:
                 await on_unload(self)
 
     async def command_quit(self, args, showhide):
+        print("Got /QUIT, disconnecting...")
         self.intentional_disconnect = True
         showhide.show()
         try:
