@@ -227,7 +227,7 @@ class ServerConnection:
         except asyncio.TimeoutError:
             log.error('Server did not close connection after %s s, aborting',
                       timeout)
-            writer.abort()
+            writer.transport.abort()
             self._handler_coroutine.cancel()
         await self._handle_event(Event("disconnect", self.server, "", []))
 
