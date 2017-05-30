@@ -269,35 +269,34 @@ class ShowHide:
 
 async def main_async(loop, config, args):
     delay = 0
-    while True:
-        client = Client(config, loop, args)
-        await client.connect()
-        task = loop.create_task(client.handle_stdin())
-        try:
+    try:
+        while True:
+            client = Client(config, loop, args)
+            await client.connect()
+            task = loop.create_task(client.handle_stdin())
             t1 = time.time()
             await client.connection.wait_disconnected()
             t2 = time.time()
-        except:
-            try:
-                client.readlines.close()
-            except Exception:
-                pass
-            task.cancel()
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
-            raise
-        if client.intentional_disconnect:
-            break
-        elapsed = t2 - t1
-        if elapsed < 60:
-            delay = 2 * delay or 2
-            print("We were disconnected. Try again in %s seconds" % delay)
-            await asyncio.sleep(delay)
-        else:
-            print("We were disconnected. Try again.")
-            delay = 0
+            if client.intentional_disconnect:
+                break
+            elapsed = t2 - t1
+            if elapsed < 60:
+                delay = 2 * delay or 2
+                print("We were disconnected. Try again in %s seconds" % delay)
+                await asyncio.sleep(delay)
+            else:
+                print("We were disconnected. Try again.")
+                delay = 0
+    finally:
+        try:
+            client.readlines.close()
+        except Exception:
+            pass
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 def main():
