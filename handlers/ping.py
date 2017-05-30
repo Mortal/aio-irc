@@ -58,18 +58,14 @@ class Handler:
         self._counter += 1
         c = str(self._counter)
         self._pongs[c] = asyncio.Future()
-        print("Send PING %r" % c)
         await self._client.connection.ping(c)
-        print("Sent PING %r. Awaiting PONG..." % c)
         await self._pongs[c]
-        print("Got PONG %r -- all is well." % c)
         del self._pongs[c]
 
     async def handle_pong(self, connection, event):
         await self._handle_any(connection, event)
         try:
             self._pongs[event.args].set_result(None)
-            print("Got PONG %r" % event.args)
         except KeyError:
             print("Unexpected PONG %r" % event.args)
 

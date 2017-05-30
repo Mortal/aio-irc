@@ -103,7 +103,6 @@ class Client:
                 method, args = 'say', line
             await self.input_command(method, args, showhide)
             showhide.show()
-        print("Finished reading lines from stdin, disconnecting...")
         self.intentional_disconnect = True
         try:
             await self.connection.quit()
@@ -117,8 +116,6 @@ class Client:
         if current_buf in (last_buffer_set, ''):
             self.readlines.set_buffer(msg)
             self.last_buffer_set = msg
-        else:
-            print("Not overriding %r with %r" % (current_buf, msg))
 
     async def event_handler(self, connection, event):
         if event.type == 'all_raw_messages':
@@ -201,7 +198,6 @@ class Client:
                 await on_unload(self)
 
     async def command_quit(self, args, showhide):
-        print("Got /QUIT, disconnecting...")
         self.intentional_disconnect = True
         showhide.show()
         try:
@@ -296,7 +292,6 @@ async def main_async(loop, config, args):
         else:
             print("We were disconnected. Try again.")
             delay = 0
-    print("main_async is done")
 
 
 def main():
@@ -324,5 +319,3 @@ if __name__ == '__main__':
         print("Exiting main() via an exception")
         traceback.print_exc()
         raise
-    else:
-        print("Exiting main() without an exception")
