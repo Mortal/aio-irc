@@ -155,6 +155,12 @@ class Client:
                     pass
                 else:
                     await on_reload(prev)
+                try:
+                    on_unload = prev.unload
+                except AttributeError:
+                    pass
+                else:
+                    await on_unload(self)
 
     async def load_subhandler(self, m):
         name = 'handlers.%s' % m
