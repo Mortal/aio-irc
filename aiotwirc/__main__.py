@@ -68,6 +68,8 @@ class Client:
         self.intentional_disconnect = False
 
     async def connect(self):
+        self.welcomed.clear()
+        self.intentional_disconnect = False
         for m in self.config.PLUGINS:
             if m not in self.subhandlers:
                 self.subhandlers[m] = await self.load_subhandler(m)
@@ -268,10 +270,11 @@ class ShowHide:
 
 
 async def main_async(loop, config, args):
+    task = None
     delay = 0
+    client = Client(config, loop, args)
     try:
         while True:
-            client = Client(config, loop, args)
             await client.connect()
             task = loop.create_task(client.handle_stdin())
             t1 = time.time()
@@ -292,11 +295,12 @@ async def main_async(loop, config, args):
             client.readlines.close()
         except Exception:
             pass
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 
 def main():

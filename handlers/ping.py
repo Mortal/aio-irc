@@ -46,7 +46,7 @@ class Handler:
             try:
                 await asyncio.wait_for(self._ping(), self._timeout)
             except asyncio.TimeoutError:
-                print("PING timeout")
+                print(id(self), "PING timeout")
                 try:
                     await self._client.connection.quit("PING timeout")
                 except irc.client.ServerNotConnectedError:
@@ -72,7 +72,7 @@ class Handler:
     async def load(self, client):
         self._counter = 0
         self._timeout = 10
-        self._pingevery = 90
+        self._pingevery = 30
         self._pongs = {}
         self._client = client
         self._last_event = time.time()
