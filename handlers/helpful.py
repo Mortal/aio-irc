@@ -58,7 +58,7 @@ RULES = {
     # !pedal
     # 'how are the splits marked? is there a button darb hits (with his foot?) or is it automatic or software or?'
 
-    '!parens': r'(\bnumbers? in.*\bparen|\(\d\)).*\?',
+    '!parens': r'(\bnumbers? in.*\b(paren|bracket)|\(\d?\)).*\?',
     # !parens
     # 'what does 7-3 (6) mean'
     # 'what does it mean where it says (4) and (6) etc'
@@ -71,7 +71,7 @@ RULES = {
     # !framerules
     # "Sorry for the amateur question but what's a frame rule?"
 
-    '!capcard': r'\bhow.*\bstream\b.*\b(console|snes)',
+    '!capcard': r'\bhow.*\bstream\b.*\b(console|snes)|\bcap(ture)? ?card.*\?|\bwhat.*cap(ture)? ?card',
 
     'darbian\'s real name is Brad which is darb backwards':
     r'^(?=.*\bdarb).*\bname\b.*\?',
@@ -81,6 +81,10 @@ RULES = {
     '!8-1 smb1_any': r'\b(good|bad).*\bjudge.*\?',
 
     'no problem DarbiansGame': r'\bthank(s| ?(you|u\b)).*\bmort(able*)?\b',
+
+    '!sgdq': 'sgdq.*\?',
+    '!tv': r'\btv\b.*\?',
+    '!car': r'\bcar\b.*\?',
 }
 
 
