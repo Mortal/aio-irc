@@ -19,8 +19,8 @@ RULES = {
     # "@brawlofthewest That wasn't a 9 on the timer but no fireworks... I don't understand..."
     # 'what does the coin count matter?'
 
-    '!wr': r'\bmany\b.*\brecord.*\?',
-    # !wrs
+    '!wr': r'\bwhat( is|\'?s)\b.*\b(wr|record)\b.*\?',
+    '!wrs': r'\bmany\b.*\brecord.*\?|\bWRs\b.*\?',
     # 'Is darbian a record holder?'
     # 'How many world records as he got?'
 
@@ -80,7 +80,7 @@ RULES = {
 
     '!8-1 smb1_any': r'\b(good|bad).*\bjudge.*\?',
 
-    'no problem DarbiansGame': r'\bthank(s| ?(you|u\b)).*\bmort(able*)?\b',
+    'no problem DarbiansGame': r'^(?=.*\bmort(able*)?\b).*\bthank(s| ?(you|u\b))',
 
     '!sgdq': 'sgdq.*\?',
     '!tv': r'\btv\b.*\?',
@@ -119,3 +119,7 @@ class Handler:
         create_and_show_notification(
             line, '%s: %s' % (name, event.args), key='helpful')
         self.client.set_default_msg(line)
+
+    async def command_helpfultest(self, client, args, showhide):
+        showhide.show()
+        print(self.get_command(args))
