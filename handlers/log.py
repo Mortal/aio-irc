@@ -167,9 +167,9 @@ class Handler:
         s = (s1 + adorn_channel(event.target) + s2) + ' ' * (WIDTH - l)
         print(f'[{s}] {event.args}')
 
-    def log_custom_event(self, source, message, target, type):
+    def log_custom_event(self, source, message, target, type, orig_event=None):
         event_dict = dict(target=target, source=source, msg=message, type=type)
-        print(f'{self.now_str()} {repr(event_dict)}',
+        print(f'{self.now_str()} {repr(orig_event or event_dict)}',
               file=self.events, flush=True)
         nick = getattr(source, 'nick', source)
         if type != 'pubmsg':
@@ -253,6 +253,18 @@ class Handler:
 
     async def handle_userstate(self, connection, event):
         pass
+
+    async def handle_clearchat(self, connection, event):
+        tags = {
+            k: v
+            for kv in (event.tags or ())
+            for k, v in [(kv['key'], kv['value'])]
+        }
+        duration = tags.get('ban-duration')
+        message = 'Timeout %s for %s second%s' % (
+            event.args, duration, '' if duration == '1' else 's')
+        self.log_custom_event('timeout', message, event.target, 'clearchat',
+                              event)
 
     def __getattr__(self, key):
         if key.startswith('handle_'):
