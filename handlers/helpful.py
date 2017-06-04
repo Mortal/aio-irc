@@ -58,10 +58,11 @@ RULES = {
     # !pedal
     # 'how are the splits marked? is there a button darb hits (with his foot?) or is it automatic or software or?'
 
-    '!parens': r'(\bnumbers? in.*\b(paren|bracket)|\(\d?\)).*\?',
+    '!parens': r'(\bnumbers? (in.*\b(paren|bracket)|next to)|\((\d(-\d)?)?\)).*\?',
     # !parens
     # 'what does 7-3 (6) mean'
     # 'what does it mean where it says (4) and (6) etc'
+    # what are the numbers next to the levels in the splits?
 
     '!bowser': r'\b(kill|fast).*bowser.*\?',
     # !bowser
@@ -82,9 +83,15 @@ RULES = {
 
     'no problem DarbiansGame': r'^(?=.*\bmort(able*)?\b).*\bthank(s| ?(you|u\b))',
 
-    '!sgdq': 'sgdq.*\?',
+    '!sgdq': '[as]gdq.*\?',
     '!tv': r'\btv\b.*\?',
     '!car': r'\bcar\b.*\?',
+
+    '!chunccs': r'\bbig.*\btime.*save.*\?',
+
+    '!chunccs The PB is deathless but there are still some timesaves': r'^!pbdeath',
+
+    'welcome to the stream': r'\bfirst.*\btime.*\b(stream|live|watch)',
 }
 
 
