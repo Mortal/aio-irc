@@ -91,7 +91,7 @@ RULES = {
 
     '!chunccs The PB is deathless but there are still some timesaves': r'^!pbdeath',
 
-    'welcome to the stream': r'\bfirst.*\btime.*\b(stream|live|watch)',
+    'welcome to the stream': r'\b(this|my).*\bfirst.*\b(stream|live|watch)',
 }
 
 
