@@ -47,19 +47,25 @@ class Handler:
                 await asyncio.wait_for(self._ping(), self._timeout)
             except asyncio.TimeoutError:
                 print(id(self), "PING timeout")
+                await asyncio.sleep(0.1)
                 try:
                     await self._client.connection.quit("PING timeout")
                 except irc.client.ServerNotConnectedError:
                     pass
                 await self._client.connection.disconnect()
                 return
+            print("Got PONG, continuing...")
 
     async def _ping(self):
         self._counter += 1
         c = str(self._counter)
         self._pongs[c] = asyncio.Future()
         await self._client.connection.ping(c)
-        await self._pongs[c]
+        try:
+            await asyncio.wait_for(self._pongs[c], 1)
+        except asyncio.TimeoutError:
+            print("Waiting for PONG %s" % c)
+            await self._pongs[c]
         del self._pongs[c]
 
     async def handle_pong(self, connection, event):
@@ -72,7 +78,7 @@ class Handler:
     async def load(self, client):
         self._counter = 0
         self._timeout = 10
-        self._pingevery = 30
+        self._pingevery = 10
         self._pongs = {}
         self._client = client
         self._last_event = time.time()
