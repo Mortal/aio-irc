@@ -87,10 +87,6 @@ RULES = {
     '!tv': r'\btv\b.*\?',
     '!car': r'\bcar\b.*\?',
 
-    '!chunccs': r'\bbig.*\btime.*save.*\?',
-
-    '!chunccs The PB is deathless but there are still some timesaves': r'^!pbdeath',
-
     'welcome to the stream': r'\b(this|my).*\bfirst.*\b(stream|live|watch)',
 }
 
