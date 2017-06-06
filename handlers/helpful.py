@@ -90,6 +90,8 @@ RULES = {
     'welcome to the stream': r'\b(this|my).*\bfirst.*\b(stream|live|watch)',
 
     '!reset': r'\breset\b.*\?',
+
+    '!chunks': r'(\btime ?save|\bbig.*\bchun[kc]).*\?',
 }
 
 
