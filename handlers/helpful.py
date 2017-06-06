@@ -4,7 +4,7 @@ from handlers.hostnotify import create_and_show_notification
 
 
 RULES = {
-    '!flagpole': r'^(?=.*(\btop\b|\bback|\bfast|\bgrab)).*flag ?pole.*\?',
+    '!flagpole': r'^(?=.*(\btop\b|\bback|\bfast|\bgrab|\bturn)).*\b(flag)?pole.*\?',
     # !flagpole
     # 'is lost level the only game you turn around at the flagpole?'
     # "why always the top of the flag pole? Would think less time to run it down? Maybe it doesn't matter cause the flag still has to come down?"
@@ -88,6 +88,8 @@ RULES = {
     '!car': r'\bcar\b.*\?',
 
     'welcome to the stream': r'\b(this|my).*\bfirst.*\b(stream|live|watch)',
+
+    '!reset': r'\breset\b.*\?',
 }
 
 
