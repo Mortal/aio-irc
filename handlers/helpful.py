@@ -81,17 +81,21 @@ RULES = {
 
     '!8-1 smb1_any': r'\b(good|bad).*\bjudge.*\?',
 
-    'no problem DarbiansGame': r'^(?=.*\bmort(able*)?\b).*\bthank(s| ?(you|u\b))',
+    'no problem DarbiansGame': r'^(?=.*\bmort(able*)?\b).*\b(thank(s| ?(you|u\b))|thx)',
 
     '!sgdq': '[as]gdq.*\?',
     '!tv': r'\btv\b.*\?',
     '!car': r'\bcar\b.*\?',
 
-    'welcome to the stream': r'\b(this|my).*\bfirst.*\b(stream|live|watch)',
+    'welcome to the stream': r'^(.*\b(this|my).*)?\bfirst.*\b(stream|live|watch|time)',
 
     '!reset': r'\breset\b.*\?',
 
     '!chunks': r'(\btime ?save|\bbig.*\bchun[kc]).*\?',
+
+    '!tas': r'\btas\b.*\b(record|time)\b.*\?',
+
+    '!luigi': r'\bluigi\b.*\?',
 }
 
 
