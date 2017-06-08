@@ -44,7 +44,7 @@ RULES = {
     # !agdq
     # 'what are you running at AGDQ??'
 
-    '!age': r'how old.*\?',
+    '!age darbTasty': r'how old.*\?',
     # !age
     # 'How old is darbian?'
 
@@ -81,7 +81,7 @@ RULES = {
 
     '!8-1 smb1_any': r'\b(good|bad).*\bjudge.*\?',
 
-    'no problem DarbiansGame': r'^(?=.*\bmort(able*)?\b).*\b(thank(s| ?(you|u\b))|thx)',
+    'no problem DarbiansGame': r'^(?=.*\bmort(able*)?\b).*\b(thank(s| ?(you|u\b))|thx|ty)',
 
     '!sgdq': '[as]gdq.*\?',
     '!tv': r'\btv\b.*\?',
