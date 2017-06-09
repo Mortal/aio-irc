@@ -58,7 +58,7 @@ RULES = {
     # !pedal
     # 'how are the splits marked? is there a button darb hits (with his foot?) or is it automatic or software or?'
 
-    '!parens': r'(\bnumbers? (in.*\b(paren|bracket)|next to)|\((\d(-\d)?)?\)).*\?',
+    '!parens': r'(\bnumbers? (in.*\b(paren|bracket)|next to)|\((\d([-/]\d)?)?\)).*\?',
     # !parens
     # 'what does 7-3 (6) mean'
     # 'what does it mean where it says (4) and (6) etc'
