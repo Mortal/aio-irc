@@ -1,6 +1,7 @@
 import time
 import asyncio
 import irc.client
+import traceback
 
 
 class Handler:
@@ -33,28 +34,32 @@ class Handler:
         self._change_pingevery.set()
 
     async def _idle_ping(self):
-        while True:
-            wait_amount = self._last_event + self._pingevery - time.time()
-            if wait_amount > 0:
+        try:
+            while True:
+                wait_amount = self._last_event + self._pingevery - time.time()
+                if wait_amount > 0:
+                    try:
+                        await asyncio.wait_for(self._change_pingevery.wait(),
+                                               wait_amount)
+                    except asyncio.TimeoutError:
+                        pass
+                    self._change_pingevery.clear()
+                    continue
                 try:
-                    await asyncio.wait_for(self._change_pingevery.wait(),
-                                           wait_amount)
+                    await asyncio.wait_for(self._ping(), self._timeout)
                 except asyncio.TimeoutError:
-                    pass
-                self._change_pingevery.clear()
-                continue
-            try:
-                await asyncio.wait_for(self._ping(), self._timeout)
-            except asyncio.TimeoutError:
-                print(id(self), "PING timeout")
-                await asyncio.sleep(0.1)
-                try:
-                    await self._client.connection.quit("PING timeout")
-                except irc.client.ServerNotConnectedError:
-                    pass
-                await self._client.connection.disconnect()
-                return
-            print("Got PONG, continuing...")
+                    print(id(self), "PING timeout")
+                    await asyncio.sleep(0.1)
+                    try:
+                        await self._client.connection.quit("PING timeout")
+                    except irc.client.ServerNotConnectedError:
+                        pass
+                    await self._client.connection.disconnect()
+                    return
+        except:
+            traceback.print_exc()
+        finally:
+            print("_idle_ping() exiting")
 
     async def _ping(self):
         self._counter += 1
@@ -62,7 +67,8 @@ class Handler:
         self._pongs[c] = asyncio.Future()
         await self._client.connection.ping(c)
         try:
-            await asyncio.wait_for(self._pongs[c], 1)
+            await asyncio.wait_for(
+                asyncio.shield(self._pongs[c]), 1)
         except asyncio.TimeoutError:
             print("Waiting for PONG %s" % c)
             await self._pongs[c]
