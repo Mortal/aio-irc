@@ -4,7 +4,7 @@ from handlers.hostnotify import create_and_show_notification
 
 
 RULES = {
-    '!flagpole': r'^(?=.*(\btop\b|\bback|\bfast|\bgrab|\bturn)).*\b(flag)?pole.*\?',
+    '!flagpole': r'^(?=.*(\btop\b|\bback|\bfast|\bgrab|\bturn)).*\b(flag|pole).*\?',
     # !flagpole
     # 'is lost level the only game you turn around at the flagpole?'
     # "why always the top of the flag pole? Would think less time to run it down? Maybe it doesn't matter cause the flag still has to come down?"
@@ -20,9 +20,10 @@ RULES = {
     # 'what does the coin count matter?'
 
     '!wr': r'\bwhat( is|\'?s)\b.*\b(wr|record)\b.*\?',
-    '!wrs': r'\bmany\b.*\brecord.*\?|\bWRs\b.*\?',
+    '!wrs': r'^(?=.*\b(many|other)\b).*\brecord.*\?|\b(WRs|world records)\b.*\?',
     # 'Is darbian a record holder?'
     # 'How many world records as he got?'
+    # Do you have world records in other mario games?
 
     '!differences': r'difference.*\?',
     # !differences
@@ -96,6 +97,9 @@ RULES = {
     '!tas': r'\btas\b.*\b(record|time)\b.*\?',
 
     '!luigi': r'\bluigi\b.*\?',
+
+    '!input': r'\b(controller|input).*\b(screen|stream).*\?',
+    # darb how do u show ur controller on the screen?
 }
 
 
