@@ -13,7 +13,7 @@ RULES = {
     # 'I thought it was faster to grab the pole at the bottom of it, no?'
     # 'Ok'
 
-    '!fireworks': r'^(?=.*\b(count|amount)).*\bcoin.*\?',
+    '!fireworks': r'^(?=.*\b(count|amount)).*\bcoin.*\?|^.*\bfirework.*\?',
     # !fireworks
     # 'What does having a certain amount of coins do?'
     # "@brawlofthewest That wasn't a 9 on the timer but no fireworks... I don't understand..."
@@ -76,7 +76,8 @@ RULES = {
     '!capcard': r'\bhow.*\bstream\b.*\b(console|snes)|\bcap(ture)? ?card.*\?|\bwhat.*cap(ture)? ?card',
 
     'darbian\'s real name is Brad which is darb backwards':
-    r'^(?=.*\bdarb).*\bname\b.*\?',
+    r'^(?=.*\b\'?darb).*\bname\b.*\?',
+    # Where does the name 'Darbian' come from? 
 
     '!elena': r'who(\'| i)?s elena\?',
 
@@ -100,6 +101,8 @@ RULES = {
 
     '!input': r'\b(controller|input).*\b(screen|stream).*\?',
     # darb how do u show ur controller on the screen?
+
+    '!maze': r'.*\bdin.*(noise|sound).*\?'
 }
 
 
