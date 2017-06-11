@@ -54,10 +54,11 @@ def adorn_name(name, tags, width, highlight):
     name = adorn_highlight(name, highlight)
     color = tags.get('color') or default_color(name)
     mo = re.match(r'^#(..)(..)(..)$', color)
-    r, g, b = [int(v, 16) for v in mo.group(1, 2, 3)]
-    light = max(r, g, b)
-    if light > 32:
-        name = '\x1B[38;2;%s;%s;%sm%s\x1B[39m' % (r, g, b, name)
+    red, green, blue = [int(v, 16) for v in mo.group(1, 2, 3)]
+    # Coefficients from MATLAB doc on rgb2gray
+    light = 0.2989 * red + 0.5870 * green + 0.1140 * blue
+    if light > 29:
+        name = '\x1B[38;2;%s;%s;%sm%s\x1B[39m' % (red, green, blue, name)
     name = prefix + name
     if padding > 0:
         name = ' ' * padding + name
@@ -160,12 +161,18 @@ class Handler:
     def print_event(self, event):
         print(f'{self.now_str()} {repr(event)}',
               file=self.events, flush=True)
+        if event.type == 'action':
+            return
         source = getattr(event.source, 'nick', event.source)
         s1 = self.time_str() + ' '
         s2 = f' {event.type} {source}'
+        args = event.args
+        if event.type == 'ctcp' and event.arguments[0] == 'ACTION':
+            s2 = f' {source}'
+            args = '/me ' + event.arguments[1]
         l = len(s1) + len(s2) + len(event.target)
         s = (s1 + adorn_channel(event.target) + s2) + ' ' * (WIDTH - l)
-        print(f'[{s}] {event.args}')
+        print(f'[{s}] {args}')
 
     def log_custom_event(self, source, message, target, type, orig_event=None):
         event_dict = dict(target=target, source=source, msg=message, type=type)
