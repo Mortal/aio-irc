@@ -106,6 +106,8 @@ RULES = {
 
     "darb's sum of best is around 35:32, but it's not accurate since there are 52 splits in each run with a lot of possibilities for splitting errors":
     r'\bsum of.*\bbest',
+
+    '!dream': r'\bdream.*\b(mario|smb).*\?',
 }
 
 
