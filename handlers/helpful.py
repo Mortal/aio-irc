@@ -136,7 +136,10 @@ class Handler:
         command = self.get_command(event.args)
         if command is None:
             return
-        line = '%s @%s' % (command, name)
+        if command.startswith('!'):
+            line = '%s @%s' % (command, name)
+        else:
+            line = '@%s: %s' % (name, command)
         create_and_show_notification(
             line, '%s: %s' % (name, event.args), key='helpful')
         self.client.set_default_msg(line)
