@@ -6,8 +6,12 @@ from aiotwirc.timer import spamming
 try:
     notify2
 except NameError:
-    import notify2
-    notify2.init('aiotwirc')
+    try:
+        import notify2
+        notify2.init('aiotwirc')
+    except ImportError:
+        print("Failed to import notify2; disabling desktop notifications")
+        notify2 = None
 
 try:
     notifications
@@ -16,6 +20,8 @@ except NameError:
 
 
 def create_and_show_notification(summary, message, icon=None, key=None):
+    if notify2 is None:
+        return
     if icon is None:
         icon = 'notification-message-im'
     if key is None or key not in notifications:

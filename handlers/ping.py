@@ -84,7 +84,7 @@ class Handler:
     async def load(self, client):
         self._counter = 0
         self._timeout = 10
-        self._pingevery = 10
+        self._pingevery = 120
         self._pongs = {}
         self._client = client
         self._last_event = time.time()
